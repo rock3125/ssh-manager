@@ -11,12 +11,12 @@ An example is shown below
 |------------------------|----------|----------|------------------------|
 | test01-app01           | 22       | simsage  | rock, rock_laptop      |
 
-The `hardest` part is gathering the existing public keys.  Copy each key from any/all machines you need and prepend each key with a name.
+The *hardest* part is gathering the existing public keys.  Copy each key from any/all machines you need and prepend each key with a name.
 The above example thus assumes there is a machine called `test01-app01` that is accessible over ssh using a user-account called `simsage`.
 For this to work you should be able to run `ssh simsage@test01-app01` and connect.  Port 22 in this case is the default ssh port and doesn't
 change anything.
 
-The program also assumes that there are two ssh keys in the `public-keys/` folder named `rock-id_rsa.pub` and `rock_laptop-id_rsa.pub`.
+The program in this case also assumes that there are two ssh keys in the `public-keys/` folder named `rock-id_rsa.pub` and `rock_laptop-id_rsa.pub`.
 Make sure you don't add any extra hyphens (-) to the name as it takes the name part from the filename.  So `rock_laptop-id_rsa.pub` in the
 code becomes `username = "rock_laptop-id_rsa.pub".split('-')[0]`.
 
