@@ -137,6 +137,9 @@ def get_difference(current, allowed):
 if __name__ == '__main__':
     # first get all the local keys, our data-set of known public keys
     known_key_set = get_known_keys()
+    if len(known_key_set) == 0:
+        print("no public keys found in public-keys/, cannot continue")
+        exit(-1)
     # lookup keys by username (i.e. the inverse of key_to_user_dict)
     user_to_key_dict = dict()
     key_to_user_dict = dict()
