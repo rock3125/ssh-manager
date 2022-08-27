@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+# Copyright (c) 2022, Rock de Vocht
 import os
 from os import listdir
 from os.path import isfile, join
