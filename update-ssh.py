@@ -207,4 +207,4 @@ if __name__ == '__main__':
             os.remove(temp_filename)
 
         else:
-            print("machine {}: no change".format(machine))
+            print("machine {}: no change, user with access: {}".format(machine, allowed_user_list))
