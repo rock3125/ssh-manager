@@ -1,3 +1,11 @@
+#
+# this is a "csv" list of what all your machines should look like, who has access to them
+#
+
+# file format:
+# machine-ip-or-hostname | port | ssh-user | allowed-user1, allowed-user2, ...
+# e.g.
+
 test01-app01 | 22 | simsage | rock, rock_laptop
 test01-app02 | 22 | simsage | rock, rock_laptop
 test01-app03 | 22 | simsage | rock, rock_laptop
