@@ -13,13 +13,13 @@ An example is shown below
 
 where:
 
-| field                  | description                                                                                                                                        |
-|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| machine ip or hostname | is the ip address or FQDN of the server you wish to check / change access to                                                                       |
-| ssh port               | the ssh port (default 22) to use for comms with the server                                                                                         |
-| ssh private key path   | a path to the private key to be used for communications with the server                                                                            |
-| ssh public key path    | a path to the public key associated with the above private key to ensure continuned communications                                                 |
-| ssh keys / user names  | a CSV list of users whose public keys must be in the `public-keys/` folder of this program the format for the public key is <user-name>_id_rsa.pub |
+| field                  | description                                                                                                                                          |
+|------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| machine ip or hostname | is the ip address or FQDN of the server you wish to check / change access to                                                                         |
+| ssh port               | the ssh port (default 22) to use for comms with the server                                                                                           |
+| ssh private key path   | a path to the private key to be used for communications with the server                                                                              |
+| ssh public key path    | a path to the public key associated with the above private key to ensure continuned communications                                                   |
+| ssh keys / user names  | a CSV list of users whose public keys must be in the `public-keys/` folder of this program the format for the public key is `<user-name>_id_rsa.pub` |
 
 The *hardest* part is gathering the existing public keys.  Copy each key from any/all machines you need and prepend each key with a name.
 The above example thus assumes there is a machine called `some-server` that is accessible over ssh using a user-account called `ssh-user`.
