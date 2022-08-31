@@ -3,12 +3,7 @@
 #
 
 # file format:
-# machine-ip-or-hostname | port | ssh-user | allowed-user1, allowed-user2, ...
+# machine-ip-or-hostname | port | ssh-user | ssh-private-key-path | ssh-public-key-path | allowed-user1, allowed-user2, ...
 # e.g.
 
-test01-app01 | 22 | simsage | rock, rock_laptop
-test01-app02 | 22 | simsage | rock, rock_laptop
-test01-app03 | 22 | simsage | rock, rock_laptop
-test01-db01  | 22 | simsage | rock, rock_laptop
-test01-db02  | 22 | simsage | rock, rock_laptop
-test01-db03  | 22 | simsage | rock, rock_laptop
+some-server | 22 | ssh-user | connection-keys/id_rsa | connection-keys/id_rsa.pub | rock, rock_laptop

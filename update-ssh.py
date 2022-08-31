@@ -2,7 +2,7 @@
 # Copyright (c) 2022, Rock de Vocht
 import os
 from os import listdir
-from os.path import isfile, join
+from os.path import isfile, join, exists
 import uuid
 
 # any key we can't identify will get this username
@@ -22,33 +22,39 @@ def read_machine_set_csv():
             if line.startswith("#"):
                 continue
             parts = line.split("|")
-            if len(parts) == 4:
+            if len(parts) == 6:
                 ssh_machine = parts[0].strip()
                 ssh_port = parts[1].strip()
-                ssh_user = parts[2].strip()
+                ssh_access_user = parts[2].strip()
+                ssh_private_key_path = parts[3].strip()
+                ssh_public_key_path = parts[4].strip()
+                if not exists(ssh_private_key_path):
+                    raise ValueError("file does not exist: {}".format(ssh_private_key_path))
+                if not exists(ssh_public_key_path):
+                    raise ValueError("file does not exist: {}".format(ssh_public_key_path))
                 user_list = []
-                csv_users_list = parts[3].strip().split(",")
-                for user in csv_users_list:
-                    user = user.strip()
-                    if len(user) > 0:
-                        user_list.append(user)
+                csv_users_list = parts[5].strip().split(",")
+                for ssh_user in csv_users_list:
+                    ssh_user = ssh_user.strip()
+                    if len(ssh_user) > 0:
+                        user_list.append(ssh_user)
                 machine_dict[ssh_machine] = dict()
-                machine_dict[ssh_machine]["user"] = ssh_user
+                machine_dict[ssh_machine]["user"] = ssh_access_user
                 machine_dict[ssh_machine]["port"] = ssh_port
                 machine_dict[ssh_machine]["allowed_user_list"] = user_list
-                machine_dict[ssh_machine]["keys_seen_list"] = []
-                machine_dict[ssh_machine]["users_seen_list"] = []
+                machine_dict[ssh_machine]["private_key"] = ssh_private_key_path
+                machine_dict[ssh_machine]["public_key"] = ssh_public_key_path
 
     return machine_dict
 
 
 # get a list of authorized users from a remote server from the authorized_users file on that server
-def get_authorized_users(ssh_user, ssh_server, ssh_port):
+def get_authorized_users(ssh_user, ssh_cert_path, ssh_server, ssh_port):
     ssh_key_list = []  # list of users found on the machine
     exec_str = "ssh -o \"StrictHostKeyChecking no\" "
     if ssh_port != "22":  # default port doesn't need to be addressed
         exec_str += "-p {} ".format(ssh_port)
-    exec_str += "{}@{} ".format(ssh_user, ssh_server)
+    exec_str += "-i {} {}@{} ".format(ssh_cert_path, ssh_user, ssh_server)
     exec_str += "'cat /home/{}/.ssh/authorized_keys'".format(ssh_user)
     try:
         # execute the command and get the list of users
@@ -70,13 +76,25 @@ def get_authorized_users(ssh_user, ssh_server, ssh_port):
         exit(-1)  # failed - can't continue
 
 
+# backup the existing authorized keys in the same .ssh on the remote server as authorized_keys.backup
+def backup_authorized_keys(ssh_user, ssh_cert_path, ssh_server, ssh_port):
+    port_str = ""  # set the port if it isn't the default one
+    if ssh_port != "22":  # default port doesn't need to be addressed
+        port_str = "-p {}".format(ssh_port)
+    exec_str = "ssh -i {} {} -o \"StrictHostKeyChecking no\" {}@{} \"cp /home/{}/.ssh/authorized_keys " \
+               "/home/{}/.ssh/authorized_keys.backup\""\
+            .format(ssh_cert_path, port_str, ssh_user, ssh_server, ssh_user, ssh_user)
+    # execute the command to copy the new authorized_keys file to this machine
+    os.system(exec_str)
+
+
 # get a list of authorized users from a remote server from the authorized_users file on that server
-def copy_authorized_keys(ssh_user, ssh_server, ssh_port, authorized_keys_filename):
+def copy_authorized_keys(ssh_user, ssh_cert_path, ssh_server, ssh_port, authorized_keys_filename):
     port_str = ""  # set the port if it isn't the default one
     if ssh_port != "22":  # default port doesn't need to be addressed
         port_str = "-P {}".format(ssh_port)
-    exec_str = "scp -o \"StrictHostKeyChecking no\" {} {} {}@{}:/home/{}/.ssh/authorized_keys"\
-        .format(port_str, authorized_keys_filename, ssh_user, ssh_server, ssh_user)
+    exec_str = "scp -i {} -o \"StrictHostKeyChecking no\" {} {} {}@{}:/home/{}/.ssh/authorized_keys"\
+        .format(ssh_cert_path, port_str, authorized_keys_filename, ssh_user, ssh_server, ssh_user)
     # execute the command to copy the new authorized_keys file to this machine
     os.system(exec_str)
 
@@ -172,9 +190,9 @@ if __name__ == '__main__':
             machine_port = str(machine_record["port"])  # the login for this machine
         else:
             machine_port = default_port  # default port is ued if not in the record
+        private_key_file_location = machine_record["private_key"]
         # store the list of keys seen on this machine in its record
-        machine_keys_list = get_authorized_users(machine_user, machine, machine_port)
-        machine_record["keys_seen_list"] = machine_keys_list
+        machine_keys_list = get_authorized_users(machine_user, private_key_file_location, machine, machine_port)
         # and match this list with the list of existing users locally to get a second
         # list of the same size translating each key to a user
         current_user_list = get_users_on_machine(machine_keys_list, key_to_user_dict)
@@ -189,20 +207,39 @@ if __name__ == '__main__':
             print("    allowed users: {}".format(allowed_user_list))
             print("    users to remove: {}, users to add: {}".format(remove_list, add_list))
 
+            # read the public key
+            public_key_path = machine_record["public_key"]
+            with open(public_key_path, "rt") as reader:
+                public_key = reader.read().strip()
+                if len(public_key) == 0:
+                    raise ValueError("invalid public key (empty): {}".format(public_key_path))
+
             # create a new authorized_keys file for the users that are allowed
             authorized_users_file = []
+            has_public_key = False
             for user in allowed_user_list:
-                allowed_key = user_to_key_dict[user]
+                allowed_key = user_to_key_dict[user].strip()
                 authorized_users_file.append("# {}".format(user))
                 authorized_users_file.append(allowed_key)
+                if allowed_key == public_key:
+                    has_public_key = True
                 authorized_users_file.append("")
+
+            # and add the public key as an accessor so this program retains access if we don't already have it
+            if not has_public_key:
+                authorized_users_file.append("# connection key ssh key")
+                authorized_users_file.append(public_key)
+                authorized_users_file.append("")
+
             # create a temp file to copy across
             file_content = '\n'.join(authorized_users_file)
             temp_filename = "authorized_keys_{}".format(uuid.uuid4())
             with open(temp_filename, 'wt') as writer:
                 writer.write(file_content)
+            # backup the existing authorized_keys first
+            backup_authorized_keys(machine_user, private_key_file_location, machine, machine_port)
             # and copy it to the remote machine - replacing the old keys
-            copy_authorized_keys(machine_user, machine, machine_port, temp_filename)
+            copy_authorized_keys(machine_user, private_key_file_location, machine, machine_port, temp_filename)
             # remove the temp file created after scp (copy)
             os.remove(temp_filename)
 
