@@ -42,3 +42,6 @@ at `/home/<ssh-user>/.ssh/authorized_keys`.
 
 This program backs up the original `/home/<ssh-user>/.ssh/authorized_keys` to `/home/<ssh-user>/.ssh/authorized_keys.backup`.
 This program will also copy the `connection-keys/id_rsa.pub` into the `authorized_keys` ensuring continued access to each server by this utility even if you forget.
+
+### run
+First update the `machine-set.csv` to match your server setup, then run `python3 update-ssh.py`
