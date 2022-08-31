@@ -227,7 +227,7 @@ if __name__ == '__main__':
 
             # and add the public key as an accessor so this program retains access if we don't already have it
             if not has_public_key:
-                authorized_users_file.append("# connection key ssh key")
+                authorized_users_file.append("# {}".format(machine_user))
                 authorized_users_file.append(public_key)
                 authorized_users_file.append("")
 
